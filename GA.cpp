@@ -11,7 +11,6 @@
 
 #define NUM_OF_ANSWERSHEET 10
 #define NUM_OF_QUESTIONS 10
-#define NUM_OF_CROSSOVER 50
 #define GENERATION 10000
 #define TRIAL 20
 using namespace std;
@@ -160,9 +159,9 @@ public:
         }
     }
 
-    void make_next_generation_pool(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool, bool proportion_crossover_point = false, double mutation_probability = 0.0005) {
+    void make_next_generation_pool(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool, bool proportion_crossover_point = false, int num_of_crossover = 50, double mutation_probability = 0.0005) {
         // 여러번 crossover을 하여 next generation 후보들을 만든다
-        for (int i = 0; i < NUM_OF_CROSSOVER; i++) {
+        for (int i = 0; i < num_of_crossover; i++) {
             pair<OMR*, OMR*> crossover = this->make_crossover(this_generation, proportion_crossover_point);
             next_generation_pool.push_back(crossover.first);
             next_generation_pool.push_back(crossover.second);
@@ -174,12 +173,8 @@ public:
         }
     }
 
-
-
     void select_next_generation(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool) {
         vector<int> random_roulette;
-        
-        // sort(next_generation_pool.begin(), next_generation_pool.end(), compare);
         
         for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
             random_roulette.clear();
@@ -208,6 +203,26 @@ int main()
     string file_name = to_string(t->tm_mday)+"_"+to_string(t->tm_hour)+"_"+to_string(t->tm_min);
     file.open(file_name+".csv");
 
+    /*
+    * 
+    * 다른 GENERATION ALGORITHM 전략을 정하는 flag
+    * this_generation_to_next_generation_pool
+    * proportion_crossover_point
+    * 
+    * 실험에 사용할 변수 
+    * mutation_probability
+    * num_of_crossover
+    * 
+    */
+
+    bool proportion_crossover_point = false;
+    bool this_generation_to_next_generation_pool = false;
+
+    double mutation_probability = 0.0005;
+    int num_of_crossover = 50;
+
+
+
     for (int trial = 0; trial < TRIAL; trial++){
         file << "trial" + to_string(trial+1)+",";
         Teacher teacher;
@@ -221,23 +236,20 @@ int main()
         
         int total_max_score = -1;
         int total_max_epoch = -1;
-        double mutation_probability = 0.0005;
-        bool proportion_crossover_point = true;
-        
 
         for (int gen = 0; gen < GENERATION; gen++) {
             int max_score = -1;
             int mean_score = 0;
-            cout << "=== Generation " << gen << " ===" << endl;
+            std::cout << "=== Generation " << gen << " ===" << endl;
             // print this generation's score
             sort(this_generation.begin(), this_generation.end(), compare);
             for (int i = 0; i < NUM_OF_QUESTIONS; i++) {
                 int score = this_generation[i]->get_score();
-                cout << score << ' ';
+                std::cout << score << ' ';
                 if (score > max_score) max_score = score;
                 mean_score += score;
             }
-            cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
+            std::cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
             file << mean_score / (double)NUM_OF_ANSWERSHEET << ",";
             if (total_max_score < max_score) {
                 total_max_score = max_score;
@@ -246,11 +258,14 @@ int main()
             }
 
             // make next generation's answersheet candidates
-            for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
-                next_generation_pool.push_back(this_generation[i]);
+
+            if (this_generation_to_next_generation_pool) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
+                for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) { 
+                    next_generation_pool.push_back(this_generation[i]);
+                }
             }
-            tests.make_next_generation_pool(this_generation, next_generation_pool, proportion_crossover_point, mutation_probability);
-            // tests.make_next_generation_pool(this_generation, next_generation_pool);
+            
+            tests.make_next_generation_pool(this_generation, next_generation_pool, proportion_crossover_point, num_of_crossover, mutation_probability);
             for (int i = 0; i < next_generation_pool.size(); i++) {
                 teacher.scoring(next_generation_pool[i]);
             }
@@ -260,7 +275,7 @@ int main()
 
             if (max_score == NUM_OF_QUESTIONS) break;
         }
-        cout << "total max score = " << total_max_score << " at " << total_max_epoch << " epochs" << endl;
+        std::cout << "total max score = " << total_max_score << " at " << total_max_epoch << " epochs" << endl;
         file << endl;
     }
     file.close();
