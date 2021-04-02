@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <cmath>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -11,8 +12,8 @@
 #define NUM_OF_ANSWERSHEET 10
 #define NUM_OF_QUESTIONS 10
 #define NUM_OF_CROSSOVER 50
-#define EPOCH 10000
-#define TRIAL 10
+#define GENERATION 10000
+#define TRIAL 20
 using namespace std;
 
 
@@ -87,7 +88,7 @@ private:
 public:
     
 
-    pair<OMR*, OMR*> make_crossover(vector<OMR*>& this_generation, int crossover_point = NUM_OF_QUESTIONS / 2) {
+    pair<OMR*, OMR*> make_crossover(vector<OMR*>& this_generation, bool proportion_crossover_point = false) {
 
         // crossover 후보로 2개의 서로 다른 답안을 선택한다.
         vector<int> random_roulette;
@@ -112,6 +113,18 @@ public:
         random_pick = rand() % random_roulette.size();
         int second_idx = random_roulette[random_pick];
 
+        int crossover_point;
+        if (proportion_crossover_point = true) {
+            double a = (double)this_generation[first_idx]->get_score();
+            double b = (double)this_generation[second_idx]->get_score();
+            a /= a+b;
+
+            crossover_point = (int)( round(a*10) );
+
+        } else {
+            crossover_point = NUM_OF_QUESTIONS / 2;
+        }
+
         // crossover
         OMR *crossover1;
         crossover1 = new OMR();
@@ -127,16 +140,16 @@ public:
         OMR *crossover2;
         crossover2 = new OMR();
 
-        for (int i = 0; i < crossover_point; i++) {
+        for (int i = 0; i < NUM_OF_QUESTIONS - crossover_point; i++) {
             crossover2->set_mark(i, this_generation[second_idx]->get_mark(i));
         }
-        for (int i = crossover_point; i < NUM_OF_QUESTIONS; i++) {
+        for (int i = NUM_OF_QUESTIONS - crossover_point; i < NUM_OF_QUESTIONS; i++) {
             crossover2->set_mark(i, this_generation[first_idx]->get_mark(i));
         }
         return make_pair(crossover1, crossover2);
     }
 
-    void make_mutation(vector<OMR*> &next_generation_pool, double mutation_probability = 0.00005) {
+    void make_mutation(vector<OMR*> &next_generation_pool, double mutation_probability = 0.0005) {
         for(int i = 0; i < next_generation_pool.size(); i++) {
             for (int j = 0; j < NUM_OF_QUESTIONS; j++) {
                 if (rand()/(double)RAND_MAX < mutation_probability ) {
@@ -147,10 +160,10 @@ public:
         }
     }
 
-    void make_next_generation_pool(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool, int crossover_point = NUM_OF_QUESTIONS / 2, double mutation_probability = 0.00005) {
+    void make_next_generation_pool(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool, bool proportion_crossover_point = false, double mutation_probability = 0.0005) {
         // 여러번 crossover을 하여 next generation 후보들을 만든다
         for (int i = 0; i < NUM_OF_CROSSOVER; i++) {
-            pair<OMR*, OMR*> crossover = this->make_crossover(this_generation, crossover_point);
+            pair<OMR*, OMR*> crossover = this->make_crossover(this_generation, proportion_crossover_point);
             next_generation_pool.push_back(crossover.first);
             next_generation_pool.push_back(crossover.second);
         }
@@ -209,9 +222,10 @@ int main()
         int total_max_score = -1;
         int total_max_epoch = -1;
         double mutation_probability = 0.0005;
+        bool proportion_crossover_point = true;
         
 
-        for (int gen = 0; gen < EPOCH; gen++) {
+        for (int gen = 0; gen < GENERATION; gen++) {
             int max_score = -1;
             int mean_score = 0;
             cout << "=== Generation " << gen << " ===" << endl;
@@ -235,7 +249,7 @@ int main()
             for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
                 next_generation_pool.push_back(this_generation[i]);
             }
-            tests.make_next_generation_pool(this_generation, next_generation_pool, 5, mutation_probability);
+            tests.make_next_generation_pool(this_generation, next_generation_pool, proportion_crossover_point, mutation_probability);
             // tests.make_next_generation_pool(this_generation, next_generation_pool);
             for (int i = 0; i < next_generation_pool.size(); i++) {
                 teacher.scoring(next_generation_pool[i]);
