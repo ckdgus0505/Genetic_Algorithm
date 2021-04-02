@@ -32,6 +32,13 @@ public:
             score = 0;
         }
 
+    OMR(OMR* clone){
+            for (int i = 0; i < NUM_OF_QUESTIONS; i++) {    
+                marking[i] = clone->get_mark(i);
+            }
+            score = clone->get_score();
+        }
+
     bool operator<(OMR a) const{
         if (this->score <= a.get_score()) return this->score<= a.get_score();
         else return this->score > a.get_score();
@@ -260,8 +267,9 @@ int main()
             // make next generation's answersheet candidates
 
             if (this_generation_to_next_generation_pool) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
-                for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) { 
-                    next_generation_pool.push_back(this_generation[i]);
+                for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
+                    OMR* tmp = new OMR(this_generation[i]);
+                    next_generation_pool.push_back(tmp);
                 }
             }
             
