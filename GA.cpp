@@ -234,7 +234,7 @@ int main()
     ofstream file;
     time_t timer = time(NULL);
     struct tm* t = localtime(&timer);
-    // string file_name = to_string(t->tm_mday)+"_"+to_string(t->tm_hour)+"_"+to_string(t->tm_min);
+    string file_name = to_string(t->tm_mday)+"_"+to_string(t->tm_hour)+"_"+to_string(t->tm_min);
 
 
     bool proportion_crossover_points[2] = {false, true};
@@ -256,18 +256,13 @@ int main()
     */
 
 
-    for (int a = 0; a < 2; a++) {
-        for (int b = 0; b < 2; b++) {
-            for (int c = 0; c < 8; c++) {
-                for (int d = 0; d < 5; d++) {
-                    string file_name = to_string(a)+"_"+to_string(b)+"_"+to_string(c)+"_"+to_string(d);
-                    file.open("csv/"+file_name+".csv");
+    file.open(file_name+".csv");
 
-                    bool proportion_crossover_point = proportion_crossover_points[a];
-                    bool this_generation_to_next_generation_pool = this_generation_to_next_generation_pools[b];
+    bool proportion_crossover_point = proportion_crossover_points[0];
+    bool this_generation_to_next_generation_pool = this_generation_to_next_generation_pools[0];
 
-                    double mutation_probability = mutation_probabilitys[c];
-                    int num_of_crossover = num_of_crossovers[d];
+    double mutation_probability = mutation_probabilitys[4];
+    int num_of_crossover = num_of_crossovers[4];
 
 
 
@@ -290,16 +285,16 @@ int main()
         for (int gen = 0; gen < GENERATION; gen++) {
             int max_score = -1;
             int mean_score = 0;
-            // std::cout << "=== Generation " << gen << " ===" << endl;
+            std::cout << "=== Generation " << gen << " ===" << endl;
             // print this generation's score
             sort(this_generation.begin(), this_generation.end(), compare);
             for (int i = 0; i < NUM_OF_QUESTIONS; i++) {
                 int score = this_generation[i]->get_score();
-                // std::cout << score << ' ';
+                std::cout << score << ' ';
                 if (score > max_score) max_score = score;
                 mean_score += score;
             }
-            // std::cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
+            std::cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
             file << mean_score / (double)NUM_OF_ANSWERSHEET << ",";
             if (total_max_score < max_score) {
                 total_max_score = max_score;
@@ -330,12 +325,6 @@ int main()
         file << endl;
     }
     file.close();
-
-
-                    }
-            }
-        }
-    }
 
     return 0;
 }
