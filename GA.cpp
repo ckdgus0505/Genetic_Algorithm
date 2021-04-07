@@ -146,10 +146,10 @@ public:
         OMR *crossover2;
         crossover2 = new OMR();
 
-        for (int i = 0; i < NUM_OF_QUESTIONS - crossover_point; i++) {
+        for (int i = 0; i < crossover_point; i++) {
             crossover2->set_mark(i, this_generation[second_idx]->get_mark(i));
         }
-        for (int i = NUM_OF_QUESTIONS - crossover_point; i < NUM_OF_QUESTIONS; i++) {
+        for (int i = crossover_point; i < NUM_OF_QUESTIONS; i++) {
             crossover2->set_mark(i, this_generation[first_idx]->get_mark(i));
         }
         return make_pair(crossover1, crossover2);
@@ -182,20 +182,47 @@ public:
 
     void select_next_generation(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool) {
         vector<int> random_roulette;
-        
-        for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
-            random_roulette.clear();
-            for (int i = 0; i < next_generation_pool.size(); i++) {
-                for (int j = 0; j < next_generation_pool[i]->get_score(); j++) {
-                    random_roulette.push_back(i);
-                }
+
+        for (int i = 0; i < this_generation.size(); i++) {
+                delete(this_generation[i]);
             }
-            int random_pick = rand() % random_roulette.size();
-            int index = random_roulette[random_pick];
-            this_generation[i]->change_marking(next_generation_pool[index]);
-            this_generation[i]->set_score(next_generation_pool[index]->get_score());
-            next_generation_pool.erase(next_generation_pool.begin()+index, next_generation_pool.begin() + index+1);
+            this_generation.clear();
+
+        if (next_generation_pool.size() == NUM_OF_ANSWERSHEET) {
+            for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
+                OMR* tmp = new OMR(next_generation_pool[i]);
+                this_generation.push_back(tmp);
+            }
+
         }
+        else {
+            for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
+                random_roulette.clear();
+                for (int i = 0; i < next_generation_pool.size(); i++) {
+                    for (int j = 0; j < next_generation_pool[i]->get_score(); j++) {
+                        random_roulette.push_back(i);
+                    }
+                }
+                int random_pick = rand() % random_roulette.size();
+                int index = random_roulette[random_pick];
+
+                OMR* tmp = new OMR(next_generation_pool[index]);
+                this_generation.push_back(tmp);
+                // this_generation[i]->change_marking(next_generation_pool[index]);
+                // this_generation[i]->set_score(next_generation_pool[index]->get_score());
+                // OMR* tmp = next_generation_pool[index];
+                // cout << tmp->get_score() << endl;
+                delete(next_generation_pool[index]);
+                next_generation_pool.erase(next_generation_pool.begin()+index);
+            }
+
+        }
+
+        for (int i = 0; i < next_generation_pool.size(); i++) {
+            delete(next_generation_pool[i]);
+        }
+
+
         next_generation_pool.clear();
     }
 };
@@ -207,8 +234,14 @@ int main()
     ofstream file;
     time_t timer = time(NULL);
     struct tm* t = localtime(&timer);
-    string file_name = to_string(t->tm_mday)+"_"+to_string(t->tm_hour)+"_"+to_string(t->tm_min);
-    file.open(file_name+".csv");
+    // string file_name = to_string(t->tm_mday)+"_"+to_string(t->tm_hour)+"_"+to_string(t->tm_min);
+
+
+    bool proportion_crossover_points[2] = {false, true};
+    bool this_generation_to_next_generation_pools[2] = {false, true};
+
+    double mutation_probabilitys[8] = {0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1};
+    int num_of_crossovers[5] = {5, 10, 25, 50, 100};
 
     /*
     * 
@@ -222,11 +255,21 @@ int main()
     * 
     */
 
-    bool proportion_crossover_point = false;
-    bool this_generation_to_next_generation_pool = false;
 
-    double mutation_probability = 0.0005;
-    int num_of_crossover = 50;
+    for (int a = 0; a < 2; a++) {
+        for (int b = 0; b < 2; b++) {
+            for (int c = 0; c < 8; c++) {
+                for (int d = 0; d < 5; d++) {
+                    string file_name = to_string(a)+"_"+to_string(b)+"_"+to_string(c)+"_"+to_string(d);
+                    file.open("csv/"+file_name+".csv");
+
+                    bool proportion_crossover_point = proportion_crossover_points[a];
+                    bool this_generation_to_next_generation_pool = this_generation_to_next_generation_pools[b];
+
+                    double mutation_probability = mutation_probabilitys[c];
+                    int num_of_crossover = num_of_crossovers[d];
+
+
 
 
 
@@ -247,16 +290,16 @@ int main()
         for (int gen = 0; gen < GENERATION; gen++) {
             int max_score = -1;
             int mean_score = 0;
-            std::cout << "=== Generation " << gen << " ===" << endl;
+            // std::cout << "=== Generation " << gen << " ===" << endl;
             // print this generation's score
             sort(this_generation.begin(), this_generation.end(), compare);
             for (int i = 0; i < NUM_OF_QUESTIONS; i++) {
                 int score = this_generation[i]->get_score();
-                std::cout << score << ' ';
+                // std::cout << score << ' ';
                 if (score > max_score) max_score = score;
                 mean_score += score;
             }
-            std::cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
+            // std::cout << endl << "max score : " << max_score << ", mean score : " << mean_score / (double)NUM_OF_ANSWERSHEET << endl;
             file << mean_score / (double)NUM_OF_ANSWERSHEET << ",";
             if (total_max_score < max_score) {
                 total_max_score = max_score;
@@ -287,5 +330,12 @@ int main()
         file << endl;
     }
     file.close();
+
+
+                    }
+            }
+        }
+    }
+
     return 0;
 }
