@@ -15,8 +15,6 @@
 #define TRIAL 20
 using namespace std;
 
-
-
 class OMR {
 private:
 
@@ -180,8 +178,16 @@ public:
         }
     }
 
-    void select_next_generation(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool) {
+    void select_next_generation(vector<OMR*> &this_generation, vector<OMR*> &next_generation_pool, bool this_generation_to_next_generation_pool = false) {
+        // make next generation's answersheet candidates
         vector<int> random_roulette;
+
+        if (this_generation_to_next_generation_pool) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
+            for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
+                OMR* tmp = new OMR(this_generation[i]);
+                next_generation_pool.push_back(tmp);
+            }
+        }
 
         for (int i = 0; i < this_generation.size(); i++) {
                 delete(this_generation[i]);
@@ -208,10 +214,7 @@ public:
 
                 OMR* tmp = new OMR(next_generation_pool[index]);
                 this_generation.push_back(tmp);
-                // this_generation[i]->change_marking(next_generation_pool[index]);
-                // this_generation[i]->set_score(next_generation_pool[index]->get_score());
-                // OMR* tmp = next_generation_pool[index];
-                // cout << tmp->get_score() << endl;
+
                 delete(next_generation_pool[index]);
                 next_generation_pool.erase(next_generation_pool.begin()+index);
             }
@@ -265,9 +268,6 @@ int main()
     int num_of_crossover = num_of_crossovers[4];
 
 
-
-
-
     for (int trial = 0; trial < TRIAL; trial++){
         file << "trial" + to_string(trial+1)+",";
         Teacher teacher;
@@ -302,22 +302,13 @@ int main()
 
             }
 
-            // make next generation's answersheet candidates
-
-            if (this_generation_to_next_generation_pool) { // this_generation의 유전자를 그대로 다음 generation에 넘기는 코드
-                for (int i = 0; i < NUM_OF_ANSWERSHEET; i++) {
-                    OMR* tmp = new OMR(this_generation[i]);
-                    next_generation_pool.push_back(tmp);
-                }
-            }
-            
             tests.make_next_generation_pool(this_generation, next_generation_pool, proportion_crossover_point, num_of_crossover, mutation_probability);
             for (int i = 0; i < next_generation_pool.size(); i++) {
                 teacher.scoring(next_generation_pool[i]);
             }
 
             // select answersheet for next generation
-            tests.select_next_generation(this_generation, next_generation_pool);
+            tests.select_next_generation(this_generation, next_generation_pool, this_generation_to_next_generation_pool);
 
             if (max_score == NUM_OF_QUESTIONS) break;
         }
